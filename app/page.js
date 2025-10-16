@@ -8,7 +8,7 @@ export default function Home() {
   
   return (
     <div>
-      <h1> hey boss </h1>
+      <h1> hey boss  This is gaffi</h1>
       <Button>Subscribe</Button>
       <Button onClick={()=>setTheme('dark')}>Dark Mode</Button>
       <Button onClick={()=>setTheme('light')}>Light Mode</Button>
