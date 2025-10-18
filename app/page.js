@@ -2,18 +2,15 @@
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import Image from "next/image";
+import ChatInputBox from "./_components/ChatInputBox";
 
 export default function Home() {
   const { theme, setTheme } = useTheme();
   
   return (
     <div>
-      <h1> hey boss  This is gaffi</h1>
-      <Button>Subscribe</Button>
-      <Button onClick={()=>setTheme('dark')}>Dark Mode</Button>
-      <Button onClick={()=>setTheme('light')}>Light Mode</Button>
       
-     
+     <ChatInputBox />
     </div>
   );
 }
