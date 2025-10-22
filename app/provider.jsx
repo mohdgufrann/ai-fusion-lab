@@ -1,73 +1,98 @@
 "use client"
 import React, { useEffect } from 'react'
 import { ThemeProvider as NextThemesProvider } from "next-themes"
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from './_components/AppSidebar'
-import App from 'next/app'
 import AppHeader from './_components/AppHeader'
-import { CirclePoundSterling } from 'lucide-react'
-import { db } from '@/config/FirebaseConfig'
-import { doc, setDoc } from 'firebase/firestore'
 import { useUser } from '@clerk/nextjs'
-// import { EmailAddress } from '@clerk/nextjs/dist/types/server'
-
-
+import { supabase } from '@/lib/supabase' // Make sure this file exists
 
 function Provider({
-     children,
+  children,
   ...props
+}) {
+  const { user } = useUser();
+
+const CreateNewUser = async () => {
+  try {
+    const userEmail = user?.primaryEmailAddress?.emailAddress;
+    
+    if (!userEmail) {
+      console.log("No email address found");
+      return;
     }
-) {
 
+    // Use maybeSingle() which doesn't throw error for no rows
+    const { data: existingUser, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', userEmail)
+      .maybeSingle(); // ← Changed to maybeSingle
 
-  const {user} = useUser();
+    if (fetchError) {
+      console.error('Error checking user:', fetchError);
+      return;
+    }
+
+    // If user exists, return early
+    if (existingUser) {
+      console.log("Existing User:", existingUser);
+      return;
+    }
+
+    // Create new user
+    const userData = {
+      id: userEmail,
+      name: user?.fullName,
+      email: userEmail,
+      created_at: new Date().toISOString(),
+      remaining_msgs: 5,
+      plan: "Free",
+      credits: 1000
+    };
+    console.log(
+      'userbdata',[userData]
+    )
+
+    const { data: newUser, error: insertError } = await supabase
+      .from('users')
+      .insert([userData])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error creating user:', insertError);
+      return;
+    }
+
+    console.log("New user data saved:", newUser);
+
+  } catch (error) {
+    console.error("Unexpected error:", error);
+  }
+};
+
   useEffect(() => {
-    if(user){
-       CreateNewUser();
+    if (user) {
+      CreateNewUser();
     }
   }, [user]);
 
-  const CreateNewUser = async() => {
-
-    const userRef = doc(db ,"user",user ?.primaryEmailAddressId?.emailAddress); 
-    const useSnap=await getDoc(userRef);
-    if(!useSnap.exists()){
-      console.log("Existing User");
-    }
-    else{
-      const userData={
-        name: user ?.fullName,
-        email: user ?.primaryEmailAddressId?.emailAddress,
-        createdAt: new Date(),
-        remainingMsgs:5,
-        plan:"Free",
-        credits:1000
-      }
-      await setDoc(userRef,userData);
-      console.log("new user data saved")
-    }
-
-
-
-  }
   return (
     <NextThemesProvider 
-     attribute="class"
-      enableSystem="true"
-       ssr="false"
-            defaultTheme="System"
-            
-            disableTransitionOnChange
-            {...props}>
-    
-    <SidebarProvider>
-      <AppSidebar/>
-      
-       <div className='w-full'>
-        <AppHeader/>
-      {children}
-    </div>
-    </SidebarProvider>
+      attribute="class"
+      enableSystem={true}
+      defaultTheme="system"
+      disableTransitionOnChange
+      {...props}
+    >
+      <SidebarProvider>
+        <AppSidebar />
+        <div className='w-full'>
+          <AppHeader />
+          {children}
+        </div>
+      </SidebarProvider>
     </NextThemesProvider>
   )
 }
