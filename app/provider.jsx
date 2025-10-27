@@ -3,15 +3,20 @@ import React, { useEffect } from 'react'
 import { ThemeProvider as NextThemesProvider } from "next-themes"
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from './_components/AppSidebar'
+import { useState } from 'react'
 import AppHeader from './_components/AppHeader'
 import { useUser } from '@clerk/nextjs'
 import { supabase } from '@/lib/supabase' // Make sure this file exists
+import { AiSelectedModelContext } from '@/config/context/AiSelectedModelContext'
+import { DefaultModel } from '@/AiModelsShared'
+
 
 function Provider({
   children,
   ...props
 }) {
   const { user } = useUser();
+  const [AiSelectedModels, setAiSelectedModels] = useState(DefaultModel);
 
 const CreateNewUser = async () => {
   try {
@@ -48,7 +53,7 @@ const CreateNewUser = async () => {
       created_at: new Date().toISOString(),
       remaining_msgs: 5,
       plan: "Free",
-      credits: 1000
+      credits: 1000 
     };
     console.log(
       'userbdata',[userData]
@@ -84,8 +89,10 @@ const CreateNewUser = async () => {
       enableSystem={true}
       defaultTheme="system"
       disableTransitionOnChange
+      
       {...props}
     >
+      <AiSelectedModelContext.Provider value={{AiSelectedModels, setAiSelectedModels}}>
       <SidebarProvider>
         <AppSidebar />
         <div className='w-full'>
@@ -93,6 +100,7 @@ const CreateNewUser = async () => {
           {children}
         </div>
       </SidebarProvider>
+      </AiSelectedModelContext.Provider>
     </NextThemesProvider>
   )
 }

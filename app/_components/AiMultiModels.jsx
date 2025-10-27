@@ -2,7 +2,7 @@
 
 import AiModelList from '@/AiModelList';
 import { LockIcon } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { use, useContext, useState } from 'react';
 import Image from 'next/image';
 import { Lock, MessageSquare } from 'lucide-react';
 import {
@@ -14,9 +14,16 @@ import {
 } from "@/components/ui/select";
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { SelectGroup } from '@radix-ui/react-select';
+
+import { SelectLabel } from '@radix-ui/react-select';
+import { AiSelectedModelContext } from '@/config/context/AiSelectedModelContext';
+import { useUser } from '@clerk/nextjs';
 
 function AiMultiModels() {
+  const {user}=useUser();
   const [AiModeList, setAiModelList] = useState(AiModelList);
+  const {AiSelectedModels, setAiSelectedModels} = useContext(AiSelectedModelContext);
 
   const onToggleChange = (model, value) => {
     setAiModelList((prev) =>
@@ -25,6 +32,23 @@ function AiMultiModels() {
       )
     );
   };
+
+  const onSelectvalue= async (parentModel, value)=>{
+    setAiSelectedModels(prev=>({
+      ...prev,
+      [parentModel]:{
+        modelId: value
+      }
+      }))
+      // update to suprabse  database
+
+      const docRef = doc(db,"users",user?.primaryEmailAddress?.emailAddress);
+      await updateDoc(docRef,{
+        selectedModelpref: AiSelectedModels
+
+    })
+
+  }
 
   return (
     <div className='flex flex-1 h-[75vh] border-b'>
@@ -45,22 +69,36 @@ function AiMultiModels() {
               />
 
               {model.enable && (
-                <Select>
+                <Select disabled= {model.premium} >
                   <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder={model.subModel[0].name} />
+                    <SelectValue placeholder={AiSelectedModels[model.model]?.modelId || "Select model"}  />
                   </SelectTrigger>
                   <SelectContent>
-                    {model.subModel.map((subModel, index) => (
-                      <SelectItem key={index} value={subModel.name}>
-                        {subModel.name}
+                    <SelectGroup  className='px-3'>
+                <SelectLabel>Free</SelectLabel>
+             {model.subModel.map((subModel, i) => 
+
+        subModel.premium === false && (
+        <SelectItem key={i} value={subModel.id}>
+         {subModel.name}
+           </SelectItem>
+        )
+           )}
+         </SelectGroup>
+           <SelectGroup className="px-3">
+                      <SelectLabel>Free</SelectLabel>
+                    {model.subModel.map((subModel, index) =>subModel.premium== true && (
+                      <SelectItem key={index} value={subModel.name} disabled={subModel.premium}>
+                        {subModel.name} {subModel.premium && <LockIcon className='inline-block ml-2 w-4 h-4'/>}
                       </SelectItem>
                     ))}
+                    </SelectGroup>
                   </SelectContent>
-                </Select>
-              )}
-            </div>
+                         </Select>
+                           )}
+                        </div>
 
-            <div>
+                             <div>
               {model.enable? <Switch
                 checked={model.enable}
                 onCheckedChange={(v) => onToggleChange(model.model, v)}
