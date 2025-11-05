@@ -1,31 +1,40 @@
- import axios from "axios";
+import axios from "axios";
 import { NextResponse } from "next/server";
-export async function POST(req){
+export async function POST(req) {
+  try {
+    const { model, msg, parentModel } = await req.json();
 
-   const { model, msg, parentModel } = await req.json();
-  /* Send POST request using Axios */
-  const response = await axios.post(
-    "https://kravixstudio.com/api/v1/chat",
-    {
-      message:msg, // Messages to AI
-      aiModel: model,                     // Selected AI model
-      outputType: "text"                         // 'text' or 'json'
-    },
-    {
-      headers: {
-        "Content-Type": "application/json",     // Tell server we're sending JSON
-        "Authorization": "Bearer" + process.env.
-KRAVIXSTUDIO_API_KEY  // Replace with your API key
+    const payload = {
+      message: [{ role: "user", content: "Hello AI!" }],
+    aiModel: "gpt-4.1-mini",
+    outputType: "text"
+    };
+
+    console.log("Payload:", payload);
+
+    const response = await axios.post(
+      "https://kravixstudio.com/api/v1/chat",
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + process.env.KRAVIXSTUDIO_API_KEY
+        }
       }
-    }
-  );
-  
-  console.log(response.data); // Log API response
+    );
 
-  // Make sure to update user tokens in supbase after this operation
-  return NextResponse.jason({
-    ...response.data,
-    model: parnetModel
-  })
+    console.log("API response:", response.data);
 
+    return NextResponse.json({
+      ...response.data,
+      model: parentModel
+    });
+
+  } catch (error) {
+    console.error("API error:", error.response?.data || error.message);
+    return NextResponse.json({
+      success: false,
+      error: error.response?.data || error.message
+    }, { status: 500 });
+  }
 }
